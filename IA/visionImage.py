@@ -1,13 +1,15 @@
 import kagglehub
-import preprocess
+from preprocess import *
 
 # # Download latest version
 # path = kagglehub.dataset_download("nexuswho/fabric-defects-dataset")
 
 # print("Path to dataset files:", path)
 
-image = "TexVision/dataset/Fabric Defect Dataset/defect free/809af08c6a3824711208578173.jpg"
+image = "TexVision\\dataset\\Fabric Defect Dataset\\defect free\\0000000.jpg"
 
-image = preprocess.preprocess_image(image)
+new_image = Preprocessing(image)
 
-print(image)
+new_image.preprocess_image()
+new_image.fourier_transform()
+new_image.show()
