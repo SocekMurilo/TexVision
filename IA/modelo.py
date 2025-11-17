@@ -7,6 +7,7 @@ batch_size = 50
 patience = 10
 learning_rate = 0.001
 model_path = 'checkpoints/Modelo.keras'
+path_img = "TexVision/dataset/Fabric Defect Dataset/teste/"
 
 exists = os.path.exists(model_path)
 
@@ -53,7 +54,7 @@ model = models.load_model(model_path) \
             activation = 'relu',
             kernel_initializer = initializers.RandomNormal()
         ),
-        layers.Dense(6,
+        layers.Dense(2,
             activation = 'sigmoid',
             kernel_initializer = initializers.RandomNormal()
         )
@@ -70,7 +71,7 @@ else:
         metrics = [ 'accuracy']
     )
 train = utils.image_dataset_from_directory(
-    "../../DataSets/Maos/ds",
+    path_img,
     validation_split= 0.2,
     subset= "training",
     seed= 123,
@@ -79,7 +80,7 @@ train = utils.image_dataset_from_directory(
     batch_size= batch_size
 )
 test = utils.image_dataset_from_directory(
-    "../../DataSets/Maos/ds",
+    path_img,
     validation_split= 0.2,
     subset= "validation",
     seed= 123,
