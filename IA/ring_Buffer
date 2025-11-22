@@ -1,0 +1,27 @@
+class RingBuffer:
+    def __init__(self, size):
+        self.size = size
+        self.buffer = [None] * size
+        self.write_index = 0
+        self.read_index = 0
+        self.full = False
+
+    def write(self, item):
+        self.buffer[self.write_index] = item
+        self.write_index = (self.write_index + 1) % self.size
+
+        if self.full:
+            # sobrescreve a mais antiga
+            self.read_index = (self.read_index + 1) % self.size
+        elif self.write_index == self.read_index:
+            self.full = True
+
+    def read(self):
+        if not self.full and self.read_index == self.write_index:
+            return None  # vazio
+
+        item = self.buffer[self.read_index]
+        self.buffer[self.read_index] = None
+        self.read_index = (self.read_index + 1) % self.size
+        self.full = False
+        return item

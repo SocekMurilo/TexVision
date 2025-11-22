@@ -1,100 +1,39 @@
-import os
-import numpy as np
-from tensorflow.keras import models, layers, optimizers
-from tensorflow.keras.utils import image_dataset_from_directory
-from tensorflow.keras.preprocessing import image
+import tensorflow as tf
+from tensorflow.keras import layers, Model
 
-# =============================================
-# CONFIGURAÇÕES
-# =============================================
-path_img = "TexVision/dataset/Fabric Defect Dataset/teste/"
-model_path = "checkpoints/autoencoder.keras"
-batch_size = 32
-epochs = 50
-image_size = (128, 128)
 
-# =============================================
-# CARREGANDO DATASET (APENAS IMAGENS BOAS)
-# =============================================
-train = image_dataset_from_directory(
-    path_img,
-    labels=None,            # NÃO usa classes
-    seed=123,
-    shuffle=True,
-    image_size=image_size,
-    batch_size=batch_size
-)
+def build_fourier_autoencoder(input_shape=(256, 256, 1)):
 
-# =============================================
-# MODELO AUTOENCODER
-# =============================================
+    # -------------------
+    #     ENCODER
+    # -------------------
+    inputs = layers.Input(shape=input_shape)
 
-# ENCODER
-encoder = models.Sequential([
-    layers.Input(shape=(128,128,3)),
-    layers.Rescaling(1/255),
-    layers.Conv2D(32, 3, activation='relu', padding='same'),
-    layers.MaxPooling2D(),
+    x = layers.Conv2D(32, (3,3), activation="relu", padding="same")(inputs)
+    x = layers.MaxPooling2D((2,2), padding="same")(x)
 
-    layers.Conv2D(64, 3, activation='relu', padding='same'),
-    layers.MaxPooling2D(),
+    x = layers.Conv2D(64, (3,3), activation="relu", padding="same")(x)
+    x = layers.MaxPooling2D((2,2), padding="same")(x)
 
-    layers.Conv2D(128, 3, activation='relu', padding='same'),
-    layers.MaxPooling2D(),
-])
+    x = layers.Conv2D(128, (3,3), activation="relu", padding="same")(x)
+    encoded = layers.MaxPooling2D((2,2), padding="same")(x)
+    # encoded shape: (32, 32, 128)
 
-# DECODER
-decoder = models.Sequential([
-    layers.Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same'),
-    layers.Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same'),
-    layers.Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same'),
-    layers.Conv2D(3, 3, activation='sigmoid', padding='same')  # imagem normalizada
-])
+    # -------------------
+    #     DECODER
+    # -------------------
+    x = layers.Conv2DTranspose(128, (3,3), strides=2, activation="relu", padding="same")(encoded)
+    x = layers.Conv2DTranspose(64, (3,3), strides=2, activation="relu", padding="same")(x)
+    x = layers.Conv2DTranspose(32, (3,3), strides=2, activation="relu", padding="same")(x)
 
-# AUTOENCODER COMPLETO
-autoencoder = models.Sequential([encoder, decoder])
+    decoded = layers.Conv2D(1, (3,3), activation="linear", padding="same")(x)
+    # reconstrução: mesmo shape da entrada
 
-autoencoder.compile(
-    optimizer=optimizers.Adam(1e-3),
-    loss='mse'
-)
+    autoencoder = Model(inputs, decoded)
 
-autoencoder.summary()
+    autoencoder.compile(
+        optimizer="adam",
+        loss="mse"
+    )
 
-# =============================================
-# TREINO
-# =============================================
-
-autoencoder.fit(
-    train,
-    epochs=epochs
-)
-
-# =============================================
-# SALVANDO MODELO
-# =============================================
-os.makedirs("checkpoints", exist_ok=True)
-autoencoder.save(model_path)
-
-print("Modelo salvo em:", model_path)
-
-# =============================================
-# FUNÇÃO DE DETECÇÃO DE DEFEITOS
-# =============================================
-
-def detectar_defeito(model, img_path, threshold=0.02):
-    """
-    Retorna True se detectar defeito.
-    False se imagem for normal.
-    """
-
-    img = image.load_img(img_path, target_size=(128,128))
-    x = image.img_to_array(img) / 255.
-    x = np.expand_dims(x, axis=0)
-
-    reconstruida = model.predict(x)
-    erro = np.mean(np.abs(x - reconstruida))
-
-    print("Erro da imagem:", erro)
-
-    return erro > threshold
+    return autoencoder
