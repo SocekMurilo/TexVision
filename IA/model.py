@@ -8,8 +8,9 @@ from tensorflow.keras import layers, models
 
 class AutoEncoder:
 
-    def __init__(self, x):
-        self.x = x
+    def __init__(self, x, img_path):
+        self.x = x.reshape(1, 256, 256, 1)
+        self.img_path = img_path
         self.threshold = None
 
     def build_autoencoder(input_shape=(256, 256, 1)):
@@ -58,14 +59,6 @@ class AutoEncoder:
 
         autoencoder.save(model)
 
-        recon = autoencoder.predict(X)
-
-        erro = np.mean((X - recon) ** 2, axis=(1,2,3))
-        median = np.median(erro)
-        mad = np.median(np.abs(erro - median))
-        threshold = median + 3 * mad
-        self.threshold = threshold
-
     def play( self, model_path, img_OK, img_BAD):
 
         autoencoder = load_model(model_path)
@@ -78,16 +71,24 @@ class AutoEncoder:
         print(f"📌 Usando threshold = {threshold}")
 
         recon = autoencoder.predict(self.x)
+
         erro = np.mean((self.x - recon)**2)
+        median = np.median(erro)
+        mad = np.median(np.abs(erro - median))
+        threshold = median + 3 * mad
+        self.threshold = 0.003#
+
+        print(erro)
+        print(threshold)
 
         if erro < threshold:
             destino = img_OK
         else:
             destino = img_BAD
 
-        shutil.copy(self.x, destino)
+        shutil.copy(self.img_path, destino)
 
-        print(f"{os.path.basename(self.x)} -> Erro {erro:.6f} -> {'BOA' if erro < threshold else 'RUIM'}")
+        print(f"{os.path.basename(self.img_path)} -> Erro {erro:.6f} -> {'BOA' if erro < threshold else 'RUIM'}")
 
         print("\n🔍 Classificação concluída!")
         print(f"✔ Imagens boas: {img_OK}")

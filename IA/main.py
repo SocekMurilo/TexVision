@@ -30,7 +30,7 @@ for img_path in list_imgs_OK:
     fourier = fourier.fourier_transform()
     X.append(fourier)
 
-    value = AutoEncoder(X)
+    value = AutoEncoder(fourier, img_path)
     value.play(model, img_OK, img_BAD)
 
 
